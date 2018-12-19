@@ -1,9 +1,11 @@
 # main links
 main:
   - title: "CV"
-    url: /cv/
-  - title: "Projects"
-    url: /projects/
+    url: /assets/pdf/cv.pdf
+  - title: "Publications"
+    url: /publications/
+  - title: "Research"
+    url: /research/
   # - title: "Sample Posts"
   #   url: /year-archive/
   # - title: "Sample Collections"
