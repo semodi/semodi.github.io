@@ -1,1 +1,1 @@
-[Sebastian Dick's website](semodi.github.io)
+[Sebastian Dick's website](https://semodi.github.io)
