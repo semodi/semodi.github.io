@@ -9,6 +9,6 @@ urlcolor: blue
 
 ## 2018
 
-- [Learning from the Density to Correct Total Energy and Forces in First Principle Simulations](https://arxiv.org/abs/1812.06572) Sebastian Dick and Marivi Fernandez-Serra (preprint) [[pdf](/assets/pdf/mlcf_paper.pdf)]
+- [Learning from the Density to Correct Total Energy and Forces in First Principle Simulations](https://arxiv.org/abs/1812.06572) Sebastian Dick and Marivi Fernandez-Serra (submitted) [[pdf](/assets/pdf/mlcf_paper.pdf)]
 
 ---

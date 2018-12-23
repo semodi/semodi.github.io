@@ -5,18 +5,18 @@ permalink: /research/
 date:   2018-10-24
 categories: pages
 research:
-  - url: "https://arxiv.org/abs/1812.06572" 
+  - url: "https://github.com/semodi/mlcf" 
     image_path: /assets/img/model_bluegradient_nolabel.png
     alt: "mlcf"
     title: "Machine learned correcting functionals"
     excerpt: "Correcting electronic structure calculations with machine learning"
-    btn_label: "Paper"
+    btn_label: "Repository"
     btn_class: "btn--primary"
   - url: "https://github.com/semodi/mbpol_calculator"
     image_path: /assets/img/mbpol.png
     alt: "mbpol"
     title: "MB-pol plugin"
-    excerpt: "A lightweight plugin for the Atomic Simulation Environment (ASE) that allows for the convenient use of the MB-pol water model"
+    excerpt: "A lightweight plugin for the Atomic Simulation Environment (ASE) aimed at facilitating the  use of the MB-pol water model"
     btn_label: "Repository"
     btn_class: "btn--primary"
   - url: "https://github.com/semodi/ed_ising"
