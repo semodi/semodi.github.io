@@ -9,9 +9,11 @@ This site is still under construction. In the meantime you can try out the inter
 with the help of Bokeh...
 
 To see the data analysis, [click here](/data_analysis/).
-## Interactive data manipulation
 
 The github repository can be found [here](https://github.com/semodi/saturationspec-rb).
+
+## Interactive data manipulation
+
 {%include saturation_spectroscopy.html %}
 
 ---
