@@ -1,0 +1,16 @@
+---
+layout: single
+title:  "Medium article published"
+excerpt: ""
+date:   2019-04-15
+categories: news
+author_profile: true
+---
+
+My friend Yaakov and I have published an article on Medium on how we solved a Data Science related problem optimizing a specific sorting algorithm with the help of pandas-native methods.  
+
+Check it out:  <a href="https://tinyurl.com/y2fkgkqe">Article</a>
+
+<p align="center"> <img src="https://cdn-images-1.medium.com/max/1440/1*2J5DCbroP5pYcN8KQHepow.png" width="400"> </p>
+
+
