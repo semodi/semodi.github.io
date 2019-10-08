@@ -4,8 +4,8 @@ main:
     url: /assets/pdf/cv.pdf
   - title: "Publications"
     url: /publications/
-  - title: "Research"
-    url: /research/
+  - title: "Projects"
+    url: /projects/
   # - title: "Sample Posts"
   #   url: /year-archive/
   # - title: "Sample Collections"
