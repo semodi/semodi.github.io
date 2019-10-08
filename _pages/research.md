@@ -1,10 +1,17 @@
 ---
 layout: splash
-title:  "Research"
-permalink: /research/
+title:  "Projects"
+permalink: /projects/
 date:   2018-10-24
 categories: pages
 research:
+  - url: "https://github.com/semodi/neuralxc" 
+    image_path: /assets/img/neuralxc.png
+    alt: "nxc"
+    title: "NeuralXC"
+    excerpt: "Python package to train and deploy machine learned density functionals"
+    btn_label: "Repository"
+    btn_class: "btn--primary"
   - url: "https://github.com/semodi/mlcf" 
     image_path: /assets/img/model_bluegradient_nolabel.png
     alt: "mlcf"
@@ -38,6 +45,13 @@ projects:
     btn_label: "Read more"
     btn_class: "btn--primary"
 
+  - url: /btw/
+    image_path: /assets/img/germany_map.png
+    alt: "btw"
+    title: "The rise of right-wing popularism in Germany"
+    excerpt: "Visualization of demographic data related to the German general election in 2017."
+    btn_label: "Read more"
+    btn_class: "btn--primary"
 
 ---
 
