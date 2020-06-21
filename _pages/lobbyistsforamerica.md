@@ -16,6 +16,8 @@ convicitions, it will support lobbyists in determining how to best allocate reso
 piece of legislation to pass, the lobbyist can e.g. use this analysis to identify which politicians need to
 be swayed and which politicians have the largest influence on their colleagues.
 
+This report is geared towards stakeholders.
+
 
 ### Questions
 1. Basic analysis of tweet statistics:
