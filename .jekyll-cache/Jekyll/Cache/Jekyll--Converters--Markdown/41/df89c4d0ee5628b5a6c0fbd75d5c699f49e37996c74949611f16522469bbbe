@@ -1,4 +1,4 @@
-I"Ø¿<h1 id="lobbyists4america---report">Lobbyists4America - Report</h1>
+I"»¿<h1 id="lobbyists4america---report">Lobbyists4America - Report</h1>
 
 <h2 id="project-description">Project description</h2>
 
@@ -95,7 +95,6 @@ As predicted, Senators have on average 4.8 more connections than House Represent
 <p>From the network graph shown below we can infer several things. 
 Senators (shown with bold borders) seem to cluster, which means that they form stronger networks with other Senators. Using the graph interactively we can identify which politicians communicate more across party lines. These are the ones closer to the boundary between Republicans and Democrats. We can further see that both Bernie Sanders and maybe more surprisingly Donald Trump is surrounded by mostly Democrats.</p>
 
-<p>&lt;!DOCTYPE html&gt;</p>
 <html lang="en">
   
   <head>
