@@ -1,0 +1,1035 @@
+I",<h1 id="saturation-spectroscopy-on-rb">Saturation Spectroscopy on Rb</h1>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="n">opt</span> 
+<span class="kn">from</span> <span class="nn">routines</span> <span class="kn">import</span> <span class="n">plot_data</span><span class="p">,</span> <span class="n">four_gauss</span><span class="p">,</span> <span class="n">plot_interval</span><span class="p">,</span><span class="n">gauss</span>
+<span class="kn">from</span> <span class="nn">uncertainties</span> <span class="kn">import</span> <span class="n">ufloat</span>
+<span class="kn">from</span> <span class="nn">uncertainties</span> <span class="kn">import</span> <span class="n">unumpy</span>
+<span class="kn">import</span> <span class="nn">scipy.fftpack</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span> <span class="k">as</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">statsmodels.nonparametric.smoothers_lowess</span> <span class="kn">import</span> <span class="n">lowess</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="n">patches</span>
+<span class="kn">from</span> <span class="nn">pandas.tools.plotting</span> <span class="kn">import</span> <span class="n">table</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="p">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s">'ignore'</span><span class="p">)</span>
+<span class="o">%</span><span class="n">pylab</span> <span class="n">inline</span>
+<span class="c1"># plt.rc('text', usetex=True)
+# plt.rc('font', family='serif')
+</span></code></pre></div>  </div>
+
+</div>
+
+<div class="language-plaintext output_stream highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  Populating the interactive namespace from numpy and matplotlib
+
+</code></pre></div></div>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Dictionary that will be used to hold all data that will be processed in the bokeh script
+</span><span class="n">bokeh_data</span> <span class="o">=</span> <span class="p">{}</span>
+</code></pre></div>  </div>
+
+</div>
+
+<h2 id="doppler-broadened-spectrum">Doppler Broadened Spectrum</h2>
+
+<h3 id="preprocessing">Preprocessing</h3>
+
+<h4 id="import-raw-data">Import Raw Data</h4>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># import data
+</span>
+<span class="n">folder</span> <span class="o">=</span> <span class="s">"02-13/broadened/falling"</span>
+<span class="n">falling</span> <span class="o">=</span> <span class="bp">True</span>
+
+<span class="n">path_doppler</span> <span class="o">=</span> <span class="s">"clean/"</span> <span class="o">+</span> <span class="n">folder</span> <span class="o">+</span> <span class="s">"/doppler.csv"</span>
+<span class="n">path_fp</span> <span class="o">=</span> <span class="s">"clean/"</span> <span class="o">+</span> <span class="n">folder</span> <span class="o">+</span> <span class="s">"/fp.csv"</span>
+
+<span class="n">doppler</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">.</span><span class="n">from_csv</span><span class="p">(</span><span class="n">path_doppler</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="n">fp</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">.</span><span class="n">from_csv</span><span class="p">(</span><span class="n">path_fp</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span> <span class="bp">None</span><span class="p">)</span>
+
+<span class="c1">#offsets
+</span><span class="n">fp</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">fp</span><span class="p">.</span><span class="n">t</span>
+<span class="n">fp</span><span class="p">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">fp</span><span class="p">.</span><span class="n">V</span><span class="o">/</span><span class="mi">5</span>
+
+<span class="c1"># show data 
+</span><span class="n">figsize</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">plot_data</span><span class="p">(</span><span class="n">doppler</span><span class="p">,</span><span class="n">fp</span><span class="p">);</span>
+
+<span class="n">bokeh_doppler</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">doppler</span><span class="p">)</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_6_0.png" alt="png" /></p>
+
+<h4 id="remove-background">Remove Background</h4>
+
+<p>Remove the background signal that is a result of the rectangular modulation in laser current.</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">remove_background</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fit_data</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">initial_guess</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    
+    <span class="n">par</span><span class="p">,</span><span class="n">cov</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="n">fit_data</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">fit_data</span><span class="p">.</span><span class="n">V</span><span class="p">,</span><span class="n">initial_guess</span><span class="p">)</span>
+    <span class="n">data_clean</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">data_clean</span><span class="p">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">V</span><span class="o">-</span><span class="n">func</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">data_clean</span> <span class="p">,</span> <span class="n">par</span>
+
+<span class="k">def</span> <span class="nf">lin</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span> <span class="c1"># linear function for fit
+</span>    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">x</span><span class="o">+</span><span class="n">b</span>
+
+<span class="c1"># For background, only fit parts without peaks
+</span><span class="n">fit_subset</span> <span class="o">=</span> <span class="n">doppler</span><span class="p">[:</span><span class="mi">200</span><span class="p">].</span><span class="n">append</span><span class="p">(</span><span class="n">doppler</span><span class="p">[</span><span class="o">-</span><span class="mi">20</span><span class="p">:])</span>
+<span class="n">photo_nb</span> <span class="p">,</span> <span class="n">par</span> <span class="o">=</span> <span class="n">remove_background</span><span class="p">(</span><span class="n">doppler</span><span class="p">,</span><span class="n">fit_subset</span><span class="p">,</span><span class="n">lin</span><span class="p">)</span>
+<span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span> <span class="o">=</span>  <span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span>
+<span class="n">figsize</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plot_data</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">,</span><span class="n">fp</span><span class="p">);</span>
+
+
+<span class="c1">#savefig('broadened.pdf')
+</span></code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_9_0.png" alt="png" /></p>
+
+<h3 id="analyze-fabry-perot">Analyze Fabry-Perot</h3>
+
+<p>The Fabry-Perot spectrum is used to calibrate the time-axis on the oscilloscope. The FP spectrometers peaks are always separated by 10 Ghz, this is called the free spectral range or FSR.</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#left maximum
+</span><span class="n">fp_lpeak</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">fp</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">math</span><span class="p">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fp</span><span class="p">.</span><span class="n">t</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)].</span><span class="n">sort_values</span><span class="p">(</span><span class="s">'V'</span><span class="p">).</span><span class="n">t</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c1">#right maximum 
+</span><span class="n">fp_rpeak</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">fp</span><span class="p">[</span><span class="n">math</span><span class="p">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fp</span><span class="p">.</span><span class="n">t</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">):].</span><span class="n">sort_values</span><span class="p">(</span><span class="s">'V'</span><span class="p">).</span><span class="n">t</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">fsr</span> <span class="o">=</span> <span class="n">fp_rpeak</span> <span class="o">-</span> <span class="n">fp_lpeak</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">figsize</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">plot_data</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">,</span><span class="n">fp</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">plot_fplines</span><span class="p">(</span><span class="n">subplots</span> <span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">subplots</span><span class="p">)):</span>
+        <span class="n">subplot</span><span class="p">(</span><span class="n">subplots</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">axvline</span><span class="p">(</span><span class="n">fp_lpeak</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">)</span>
+        <span class="n">axvline</span><span class="p">(</span><span class="n">fp_rpeak</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">)</span>    
+
+<span class="n">plot_fplines</span><span class="p">()</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_13_0.png" alt="png" /></p>
+
+<h3 id="analyze-photometer-spectrum">Analyze Photometer spectrum</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Fit the data
+</span>
+<span class="c1"># Load file with save values for mu if it exists. If not use mu_guess and save later if success. 
+# mu corresponds to the peak positions in the doppler broadened spectrum. To achieve convergence of the 
+# least square fitting algorithm, a good initial guess should be provided.
+</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">mu_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">"./clean/"</span> <span class="o">+</span> <span class="n">folder</span> <span class="o">+</span> <span class="s">"/mu_guess"</span><span class="p">,</span><span class="s">'r'</span><span class="p">)</span>
+    <span class="n">mu_guess</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">mu_file</span><span class="p">:</span>
+        <span class="n">mu_guess</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">.</span><span class="n">strip</span><span class="p">())]</span>
+<span class="k">except</span> <span class="nb">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">mu_guess</span><span class="o">=</span><span class="p">[</span><span class="mf">10.03</span><span class="p">,</span><span class="mf">10.06</span><span class="p">,</span><span class="mf">10.12</span><span class="p">,</span><span class="mf">10.14</span><span class="p">]</span>
+    
+<span class="n">guess</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span><span class="o">-</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span><span class="o">-</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span><span class="o">-</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span><span class="o">*</span><span class="n">mu_guess</span><span class="p">,.</span><span class="mi">005</span><span class="p">,.</span><span class="mi">005</span><span class="p">,.</span><span class="mi">005</span><span class="p">,.</span><span class="mi">005</span><span class="p">]</span>
+<span class="n">par</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">four_gauss</span><span class="p">,</span> <span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="p">,</span> <span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span><span class="p">,</span> <span class="n">guess</span><span class="p">)</span>
+
+<span class="c1">### Peaks and uncertainties
+</span>
+<span class="c1">#peaks[{x:0/y:1}][index]
+</span><span class="n">peaks</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">([</span><span class="n">par</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">],</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]])</span>
+
+<span class="c1">#their errors (1 sigma)
+</span><span class="n">peaks_err</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">)],[</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">)]])</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Data Frame with peak positions and heights
+</span>
+<span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s">'87_F2'</span><span class="p">,</span><span class="s">'85_F3'</span><span class="p">,</span><span class="s">'85_F2'</span><span class="p">,</span><span class="s">'87_F1'</span><span class="p">]</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">falling</span><span class="p">:</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">index</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">spectrum</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s">'x'</span> <span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">Series</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">],</span><span class="n">index</span><span class="p">),</span>
+    <span class="s">'y'</span><span class="p">:</span>  <span class="n">pd</span><span class="p">.</span><span class="n">Series</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span><span class="n">index</span><span class="p">),</span>
+    <span class="s">'sig_x'</span><span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">Series</span><span class="p">(</span><span class="n">peaks_err</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">index</span><span class="p">),</span>
+    <span class="s">'sig_y'</span><span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">Series</span><span class="p">(</span><span class="n">peaks_err</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">index</span><span class="p">),</span>
+    <span class="s">'width'</span><span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">Series</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">12</span><span class="p">],</span><span class="n">index</span><span class="p">),</span>
+    <span class="s">'sig_width'</span><span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">Series</span><span class="p">([</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">12</span><span class="p">)],</span><span class="n">index</span><span class="p">)})</span>
+
+<span class="n">spectrum</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div>
+  <div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>x</th>
+      <th>y</th>
+      <th>sig_x</th>
+      <th>sig_y</th>
+      <th>width</th>
+      <th>sig_width</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>87_F2</th>
+      <td>10.290474</td>
+      <td>-0.024994</td>
+      <td>0.000018</td>
+      <td>0.000068</td>
+      <td>0.005608</td>
+      <td>0.000018</td>
+    </tr>
+    <tr>
+      <th>85_F3</th>
+      <td>10.315141</td>
+      <td>-0.057517</td>
+      <td>0.000007</td>
+      <td>0.000071</td>
+      <td>0.005175</td>
+      <td>0.000008</td>
+    </tr>
+    <tr>
+      <th>85_F2</th>
+      <td>10.374536</td>
+      <td>-0.039835</td>
+      <td>0.000010</td>
+      <td>0.000074</td>
+      <td>0.004653</td>
+      <td>0.000010</td>
+    </tr>
+    <tr>
+      <th>87_F1</th>
+      <td>10.422916</td>
+      <td>-0.013536</td>
+      <td>0.000030</td>
+      <td>0.000074</td>
+      <td>0.004675</td>
+      <td>0.000030</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+  </div>
+
+<h3 id="plotting">Plotting</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">figsize</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">np</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span> <span class="o">=</span> <span class="o">-</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span>
+<span class="n">xl</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">,</span><span class="n">fp</span><span class="p">,</span><span class="n">subplots</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">ylabel</span><span class="p">(</span><span class="s">'Fabry-Perot [V]'</span><span class="p">)</span>
+<span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">-</span><span class="n">four_gauss</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par</span><span class="p">),</span><span class="n">label</span> <span class="o">=</span> <span class="s">'Gaussian Fit'</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'red'</span><span class="p">,</span><span class="n">linewidth</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">xticks</span><span class="p">([])</span>
+<span class="n">xlabel</span><span class="p">(</span><span class="s">''</span><span class="p">)</span>
+<span class="n">ylabel</span><span class="p">(</span><span class="s">'Absorption [mV]'</span><span class="p">)</span>
+<span class="n">yticks</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.051</span><span class="p">,</span><span class="mf">0.025</span><span class="p">),</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">51</span><span class="p">,</span><span class="mi">25</span><span class="p">))</span>
+
+
+<span class="n">plot_fplines</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">xlabel</span><span class="p">(</span><span class="s">'Frequency [Ghz]'</span><span class="p">)</span>
+<span class="c1">#xticks(np.arange(-5,5,1))
+</span><span class="n">xlim</span><span class="p">(</span><span class="n">xl</span><span class="p">)</span>
+<span class="n">yticks</span><span class="p">([])</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">:</span>
+        <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">axvline</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span><span class="n">color</span><span class="o">=</span> <span class="s">'darkgrey'</span><span class="p">,</span><span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">)</span>
+        
+<span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">scale</span> <span class="o">=</span> <span class="mf">10e3</span><span class="o">/</span><span class="n">fsr</span> <span class="c1">#MHz
+</span><span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">6000</span><span class="p">,</span><span class="mi">6000</span><span class="p">,</span><span class="mi">2000</span><span class="p">)</span><span class="o">/</span><span class="n">scale</span> <span class="o">+</span><span class="mf">10.35</span><span class="p">,</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="c1">##uncertainties in intervals
+</span>
+<span class="n">interval_32</span> <span class="o">=</span> <span class="n">ufloat</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">]</span><span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">]),</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">interval_21</span> <span class="o">=</span> <span class="n">ufloat</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">]</span><span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">]),</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+
+<span class="n">plot_interval</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">],</span><span class="mf">0.35</span><span class="p">,</span> 
+              <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">interval_32</span><span class="p">.</span><span class="n">n</span><span class="o">*</span><span class="n">scale</span><span class="o">/</span><span class="mi">1000</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="s">" GHz"</span> <span class="p">,.</span><span class="mi">0174</span><span class="p">)</span>
+<span class="n">plot_interval</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">],</span><span class="mf">0.65</span><span class="p">,</span>
+              <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">interval_21</span><span class="p">.</span><span class="n">n</span><span class="o">*</span><span class="n">scale</span><span class="o">/</span><span class="mi">1000</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="s">" GHz"</span><span class="p">,.</span><span class="mi">0174</span><span class="p">)</span>
+
+<span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plot_interval</span><span class="p">(</span><span class="n">fp_lpeak</span><span class="p">,</span><span class="n">fp_rpeak</span><span class="p">,.</span><span class="mi">1</span><span class="p">,</span> <span class="s">" 10 Ghz"</span><span class="p">,.</span><span class="mi">013</span><span class="p">,</span><span class="n">hw</span> <span class="o">=</span> <span class="p">.</span><span class="mi">02</span><span class="p">)</span>
+
+
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'a)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'b)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">)</span>
+<span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'c)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">);</span>
+
+<span class="c1"># savefig("./clean/" + folder + "/spectrum.pdf",bbox_inches='tight')
+</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_18_0.png" alt="png" /></p>
+
+<h3 id="save-mu">Save mu</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"./clean/"</span> <span class="o">+</span> <span class="n">folder</span> <span class="o">+</span> <span class="s">"/mu_guess"</span><span class="p">,</span><span class="s">'w'</span><span class="p">)</span> <span class="k">as</span> <span class="n">mu_file</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">mu</span> <span class="ow">in</span> <span class="n">mu_guess</span><span class="p">:</span>
+        <span class="n">mu_file</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">+</span><span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="p">)</span>
+</code></pre></div>  </div>
+
+</div>
+
+<h2 id="saturated-spectrum">Saturated Spectrum</h2>
+
+<h3 id="preprocessing-1">Preprocessing</h3>
+
+<h4 id="import-data">Import Data</h4>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">folder</span> <span class="o">=</span> <span class="s">"02-13/saturated/falling"</span>
+
+<span class="n">path_saturated</span> <span class="o">=</span> <span class="s">"clean/"</span> <span class="o">+</span> <span class="n">folder</span> <span class="o">+</span> <span class="s">"/saturated.csv"</span>
+<span class="n">path_doppler</span> <span class="o">=</span> <span class="s">"clean/"</span> <span class="o">+</span> <span class="n">folder</span> <span class="o">+</span> <span class="s">"/doppler.csv"</span>
+
+<span class="n">saturated</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">.</span><span class="n">from_csv</span><span class="p">(</span><span class="n">path_saturated</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="n">doppler</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">.</span><span class="n">from_csv</span><span class="p">(</span><span class="n">path_doppler</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span> <span class="bp">None</span><span class="p">)</span>
+
+<span class="c1"># show data 
+</span><span class="n">figsize</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">saturated</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">saturated</span><span class="p">.</span><span class="n">V</span><span class="p">);</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_24_0.png" alt="png" /></p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Functions used for fitting the spectrum
+</span>
+<span class="k">def</span> <span class="nf">lorentzian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">x0</span><span class="p">,</span><span class="n">gamma</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">N</span><span class="o">/</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">/</span><span class="n">gamma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">two_gauss_os</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N1</span><span class="p">,</span><span class="n">N2</span><span class="p">,</span><span class="n">mu1</span><span class="p">,</span><span class="n">mu2</span><span class="p">,</span><span class="n">sig1</span><span class="p">,</span><span class="n">sig2</span><span class="p">,</span><span class="n">os</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N1</span><span class="p">,</span><span class="n">mu1</span><span class="p">,</span><span class="n">sig1</span><span class="p">)</span> <span class="o">+</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N2</span><span class="p">,</span><span class="n">mu2</span><span class="p">,</span><span class="n">sig2</span><span class="p">)</span> <span class="o">+</span> <span class="n">os</span>
+
+<span class="k">def</span> <span class="nf">gauss_os</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N1</span><span class="p">,</span><span class="n">mu1</span><span class="p">,</span><span class="n">sig1</span><span class="p">,</span><span class="n">os</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N1</span><span class="p">,</span><span class="n">mu1</span><span class="p">,</span><span class="n">sig1</span><span class="p">)</span> <span class="o">+</span> <span class="n">os</span>
+
+<span class="k">def</span> <span class="nf">lin</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="n">b</span>
+</code></pre></div>  </div>
+
+</div>
+
+<h4 id="compare-doppler-broadened-and-saturated">Compare doppler broadened and saturated</h4>
+
+<p>We “zoomed in” on one peak - 87Rb(F = 2 -&gt; ?) - and recorded the unsaturated and saturated spectrum</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">figsize</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span> 
+<span class="n">background</span> <span class="o">=</span> <span class="n">doppler</span><span class="p">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c1"># These parameters have to be hand-adjusted for every Dataset for good agreement
+#background.t += 0.016 # 02-13 rising
+</span><span class="n">background</span><span class="p">.</span><span class="n">t</span> <span class="o">-=</span> <span class="mf">0.005</span> <span class="c1"># 02-13 falling
+#background.V += 0.0105 # 02-13 rising
+</span><span class="n">background</span><span class="p">.</span><span class="n">V</span> <span class="o">+=</span> <span class="mf">0.0111</span> <span class="c1"># 02-13 falling
+</span>
+<span class="n">merged</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">merge</span><span class="p">(</span><span class="n">background</span><span class="p">,</span><span class="n">saturated</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s">'inner'</span><span class="p">,</span><span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s">'t'</span><span class="p">])</span>
+
+<span class="n">plot</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">merged</span><span class="p">.</span><span class="n">V_x</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s">'Unsaturated'</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">merged</span><span class="p">.</span><span class="n">V_y</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s">'Saturated'</span><span class="p">)</span>
+<span class="n">legend</span><span class="p">();</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_28_0.png" alt="png" /></p>
+
+<h4 id="subract-linear-background-from-absorption-spectrum">Subract linear background from absorption spectrum</h4>
+
+<p>Again, we have to subract the linear background produced by the current modulation from both signals</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">lin_fit_data</span> <span class="o">=</span> <span class="n">background</span><span class="p">[</span><span class="n">background</span><span class="p">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="mf">14.38</span><span class="p">]</span> <span class="c1"># 02-13 falling
+#lin_fit_data = background[background.t&gt; 12.03] # 02-13 rising
+</span><span class="n">par_back_lin</span><span class="p">,</span> <span class="n">cov_back_lin</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">lin</span><span class="p">,</span><span class="n">lin_fit_data</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">lin_fit_data</span><span class="p">.</span><span class="n">V</span><span class="p">)</span>
+<span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">lin</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par_back_lin</span><span class="p">))</span>
+
+<span class="n">background</span><span class="p">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="o">-</span><span class="n">lin</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par_back_lin</span><span class="p">)</span>
+<span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="p">)</span>
+<span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span><span class="s">'green'</span><span class="p">)</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div class="language-plaintext output_data_text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  &lt;matplotlib.lines.Line2D at 0x7f1f50f777f0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_31_1.png" alt="png" /></p>
+
+<p>Because we cannot use the FP spectrometer to calibrate the time axis in this case, we fit the unsaturated peak 
+and compare its width to the corresponding peak’s in our previous measurement. As both widhts should be the same in frequency, we can easily determine the scaling factor.</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#Fit doppler broadened (unsaturated) peak (to determine scaling factor)
+</span>
+<span class="n">figsize</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="c1">#guess = [-0.04,-0.02,11.6,11.85,.1,.1,0.16] # 02-13 rising
+</span><span class="n">guess</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.04</span><span class="p">,</span><span class="mf">14.6</span><span class="p">,.</span><span class="mi">1</span><span class="p">,</span><span class="mf">0.16</span><span class="p">]</span> <span class="c1"># 02-13 falling
+</span>
+<span class="n">fit_func</span> <span class="o">=</span> <span class="n">gauss_os</span> <span class="c1"># 02-13 falling
+#fit_func = two_gauss_os # 02-13 rising
+</span>
+<span class="c1">#par_background, cov_background = opt.curve_fit(two_gauss_os,background.t,background.V,guess) # 02-13 rising
+</span><span class="n">par_background</span><span class="p">,</span> <span class="n">cov_background</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">fit_func</span><span class="p">,</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="p">,</span><span class="n">guess</span><span class="p">)</span> <span class="c1"># 02-13 falling
+</span><span class="n">plot</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">fit_func</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par_background</span><span class="p">),</span><span class="n">lw</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="n">scattersigma</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="o">-</span><span class="n">fit_func</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par_background</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">).</span><span class="nb">sum</span><span class="p">())</span><span class="o">/</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">background</span><span class="p">.</span><span class="n">V</span><span class="p">))</span>
+
+<span class="c1">#sigma_background = ufloat(par_background[5],cov_background[5,5]) # 02-13 rising
+</span><span class="n">sigma_background</span> <span class="o">=</span> <span class="n">ufloat</span><span class="p">(</span><span class="n">par_background</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov_background</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]))</span> <span class="c1"># 02-13 falling
+</span>
+<span class="n">F2_width_doppler</span> <span class="o">=</span> <span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">width</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_width</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">])</span>
+
+<span class="n">scale_sat</span> <span class="o">=</span> <span class="n">F2_width_doppler</span><span class="o">*</span><span class="n">scale</span><span class="o">/</span><span class="n">sigma_background</span>
+<span class="k">print</span><span class="p">(</span><span class="s">' The scaling factor between the doppler broadened measurement and the saturated '</span> <span class="o">+</span>\
+      <span class="s">' measurement is {}'</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">scale_sat</span><span class="p">))</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div class="language-plaintext output_stream highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   The scaling factor between the doppler broadened measurement and the saturated  measurement is 3947+/-14
+
+</code></pre></div></div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_33_1.png" alt="png" /></p>
+
+<h4 id="signal-processing">Signal processing</h4>
+
+<p>Because we are measuring with a very high resolution, the signal contains a lot of noise that we can filter out by employing a method call LOWESS (Locally Weighted Scatterplot Smoothing). The hyperparameters of this smoothening algorithm should be hand-tuned to achieve good results</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">figsize</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="n">sat_nb</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">merged</span><span class="p">.</span><span class="n">t</span><span class="p">,(</span><span class="n">merged</span><span class="p">.</span><span class="n">V_y</span><span class="o">-</span><span class="n">merged</span><span class="p">.</span><span class="n">V_x</span><span class="p">)])</span>
+<span class="n">sat_nb</span> <span class="o">=</span> <span class="n">sat_nb</span><span class="p">.</span><span class="n">transpose</span><span class="p">()</span>
+<span class="n">sat_nb</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">,</span><span class="s">'V'</span><span class="p">]</span>
+<span class="n">sat_nb</span><span class="p">.</span><span class="n">head</span><span class="p">()</span>
+
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">merged</span><span class="p">.</span><span class="n">V_y</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">merged</span><span class="p">.</span><span class="n">V_x</span><span class="p">)</span>
+
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">sat_nb</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">sat_nb</span><span class="p">.</span><span class="n">V</span><span class="p">)</span>
+
+
+<span class="c1">### ============ LOWESS smoothening, hand-tune here !!! ==================
+</span>
+<span class="c1">#filtered = lowess(sat_nb.V,sat_nb.t,frac = 0.018, it=0) # 02-13 rising
+</span><span class="n">filtered</span> <span class="o">=</span> <span class="n">lowess</span><span class="p">(</span><span class="n">sat_nb</span><span class="p">.</span><span class="n">V</span><span class="p">,</span><span class="n">sat_nb</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">frac</span> <span class="o">=</span> <span class="mf">0.028</span><span class="p">,</span> <span class="n">it</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="c1"># 02-13 falling
+</span>
+<span class="n">sat_filtered</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">filtered</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">filtered</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]])</span>
+<span class="n">sat_filtered</span> <span class="o">=</span> <span class="n">sat_filtered</span><span class="p">.</span><span class="n">transpose</span><span class="p">()</span>
+<span class="n">sat_filtered</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">,</span><span class="s">'V'</span><span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">sat_filtered</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">sat_filtered</span><span class="p">.</span><span class="n">V</span><span class="o">/</span><span class="n">scattersigma</span><span class="p">)</span>
+
+<span class="c1">#axhline(1,ls='--',color='grey',label='2$\sigma$') 
+</span><span class="n">axhline</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="s">'--'</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">'grey'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">'2$\sigma$'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"$\sigma$"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span>
+<span class="c1">#legend()
+</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="s">'a)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'b)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'c)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">);</span>
+
+<span class="c1"># savefig("./clean/"+ folder + "/data_manip.pdf",bbox_inch='tight')
+</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_36_0.png" alt="png" /></p>
+
+<p>a) Saturated and Unsaturated spectrum</p>
+
+<p>b) Saturated - Unsaturated spectrum</p>
+
+<p>c) Spectrum from b) smoothened with LOWESS and normalized to the standard deviation $\sigma$ of the noise.
+   Dashed grey line gives the cutoff $2\sigma$ that we require to identify a peak as such</p>
+
+<h3 id="analysis">Analysis</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+<span class="n">figsize</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="c1"># ============ Some fitting parameters that need to be hand tuned ============
+</span>    <span class="c1"># width: approximate width of the peaks 
+</span>    <span class="c1"># left-pos: approximate peak position - width / 2
+</span>    <span class="c1"># parameters don't have to be exact, just in the ballpark of the actual peaks
+</span>    
+<span class="n">width</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.004</span><span class="p">,</span><span class="mf">0.004</span><span class="p">,</span><span class="mf">0.006</span><span class="p">,</span><span class="mf">0.006</span><span class="p">,</span><span class="mf">0.006</span><span class="p">,</span><span class="mf">0.006</span><span class="p">]</span>
+<span class="c1">#left_pos = [11.815,11.848,11.866,11.878,11.898,11.912] # 02-13 rising
+</span><span class="n">left_pos</span> <span class="o">=</span> <span class="p">[</span><span class="mf">14.484</span><span class="p">,</span><span class="mf">14.504</span><span class="p">,</span><span class="mf">14.521</span><span class="p">,</span><span class="mf">14.536</span><span class="p">,</span><span class="mf">14.5555</span><span class="p">,</span><span class="mf">14.59</span><span class="p">]</span> <span class="c1"># 02-13 falling
+</span>
+<span class="c1"># truncate data so only important peaks are shown
+</span><span class="n">sat_filtered_trunc</span> <span class="o">=</span> <span class="n">sat_filtered</span><span class="p">[(</span><span class="n">sat_filtered</span><span class="p">.</span><span class="n">t</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">left_pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">width</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">&amp;</span> 
+                                  <span class="p">(</span><span class="n">sat_filtered</span><span class="p">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">left_pos</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">width</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]</span>
+
+
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sat_filtered_trunc</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">sat_filtered_trunc</span><span class="p">.</span><span class="n">V</span><span class="p">,</span><span class="n">label</span> <span class="o">=</span> <span class="s">'Filtered Signal'</span><span class="p">)</span>
+
+<span class="n">axhline</span><span class="p">(</span><span class="n">scattersigma</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="s">'-'</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">'grey'</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="p">.</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">par_peaks</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">par_peaks_xerr</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s">'F=3'</span><span class="p">,</span><span class="s">'CO'</span><span class="p">,</span><span class="s">'CO'</span><span class="p">,</span><span class="s">'F=2'</span><span class="p">,</span><span class="s">'CO'</span><span class="p">,</span><span class="s">"F=1?"</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">falling</span><span class="p">:</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    
+<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+ 
+<span class="c1"># Fitting the data for each area and plotting the fitted functions,
+# parameters are saved in par_peaks
+</span>
+<span class="n">peak_sig</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">left_pos</span><span class="p">,</span><span class="n">width</span><span class="p">):</span>
+    <span class="n">fit_data</span> <span class="o">=</span> <span class="n">sat_filtered_trunc</span><span class="p">[(</span><span class="n">sat_filtered_trunc</span><span class="p">.</span><span class="n">t</span> <span class="o">&gt;</span> <span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">sat_filtered_trunc</span><span class="p">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="n">w</span><span class="p">))]</span>
+    <span class="c1">#ax.plot(fit_data.t,fit_data.V)
+</span>    <span class="n">x0</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">w</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">fit_data</span><span class="p">.</span><span class="n">V</span><span class="p">)</span>
+    <span class="n">gamma</span> <span class="o">=</span> <span class="n">w</span>  
+    <span class="n">par</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">lorentzian</span><span class="p">,</span><span class="n">fit_data</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">fit_data</span><span class="p">.</span><span class="n">V</span><span class="p">,[</span><span class="n">N</span><span class="p">,</span><span class="n">x0</span><span class="p">,</span><span class="n">gamma</span><span class="p">])</span>
+    <span class="n">plt_label</span> <span class="o">=</span> <span class="s">"x0="</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>  
+    <span class="n">ax</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fit_data</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="n">lorentzian</span><span class="p">(</span><span class="n">fit_data</span><span class="p">.</span><span class="n">t</span><span class="p">,</span><span class="o">*</span><span class="n">par</span><span class="p">),</span><span class="n">label</span><span class="o">=</span><span class="n">plt_label</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">xy</span> <span class="o">=</span> <span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mf">0.005</span><span class="p">,</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mf">0.0001</span><span class="p">),</span><span class="n">textcoords</span><span class="o">=</span><span class="s">'data'</span><span class="p">)</span>
+    <span class="n">axvline</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">ls</span> <span class="o">=</span> <span class="s">"--"</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="p">.</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">par_peaks</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+    <span class="n">peak_sig</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+    
+    <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+
+<span class="c1">#Data frame with parameters
+</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mf">0.001</span><span class="p">,</span><span class="mf">0.0083</span><span class="p">])</span>
+
+
+<span class="n">ylabel</span><span class="p">(</span><span class="s">"$\sigma$"</span><span class="p">)</span>
+<span class="n">xlabel</span><span class="p">(</span><span class="s">"Frequency [MHz]"</span><span class="p">)</span>
+<span class="n">spectrum_sat</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">par_peaks</span><span class="p">)</span>
+<span class="n">spectrum_sat</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'y'</span><span class="p">,</span><span class="s">'x'</span><span class="p">,</span><span class="s">'width'</span><span class="p">]</span>
+<span class="n">spectrum_sat</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">labels</span>
+<span class="c1">#axvline((spectrum_sat.x['F=2']-157.1/scale_sat).n,color ='green', ls='--', alpha = .3)
+</span>
+<span class="n">u_x</span> <span class="o">=</span> <span class="p">[</span><span class="n">ufloat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">peak_sig</span><span class="p">[</span><span class="n">cnt</span><span class="p">])</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">cnt</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">,</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">)))]</span>
+<span class="n">spectrum_sat</span><span class="p">[</span><span class="s">'x'</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_x</span>   
+<span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">scale_sat</span>
+
+
+
+
+<span class="n">yticks</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">scattersigma</span><span class="p">,</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">xticks</span><span class="p">([</span><span class="n">x</span><span class="p">.</span><span class="n">n</span><span class="o">/</span><span class="n">scale_sat</span><span class="p">.</span><span class="n">n</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">],[</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">n</span><span class="o">-</span><span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">"F=2"</span><span class="p">].</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">])</span>
+
+<span class="c1"># savefig("./clean/" + folder + "/hyperfine_spectrum.pdf",bbox_inches='tight')
+# legend()
+</span><span class="n">spectrum_sat</span>
+
+
+</code></pre></div>  </div>
+
+</div>
+
+<div>
+  <div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>y</th>
+      <th>x</th>
+      <th>width</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>F=1?</th>
+      <td>0.000955</td>
+      <td>(5.717+/-0.021)e+04</td>
+      <td>0.002708</td>
+    </tr>
+    <tr>
+      <th>CO</th>
+      <td>0.002669</td>
+      <td>(5.726+/-0.021)e+04</td>
+      <td>0.006048</td>
+    </tr>
+    <tr>
+      <th>F=2</th>
+      <td>0.003303</td>
+      <td>(5.732+/-0.021)e+04</td>
+      <td>0.006505</td>
+    </tr>
+    <tr>
+      <th>CO</th>
+      <td>0.005327</td>
+      <td>(5.738+/-0.021)e+04</td>
+      <td>0.006669</td>
+    </tr>
+    <tr>
+      <th>CO</th>
+      <td>0.007679</td>
+      <td>(5.746+/-0.021)e+04</td>
+      <td>0.007452</td>
+    </tr>
+    <tr>
+      <th>F=3</th>
+      <td>0.002045</td>
+      <td>(5.759+/-0.021)e+04</td>
+      <td>0.006905</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+  </div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_39_1.png" alt="png" /></p>
+
+<p>The peaks are fitted with lorentzians as indicated by the colored regions. The peak positions are given by the dashed vertical lines and labeled accordingly, where CO stands for cross-over peak (see paper for more information).
+Again the y-axis (Intensity) is normalized to the standard deviation of the noise.</p>
+
+<h2 id="comparison-to-theory">Comparison to theory</h2>
+
+<h3 id="doppler-broadened">Doppler Broadened</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Some natural constants 
+</span><span class="n">kb</span> <span class="o">=</span> <span class="mf">1.38065e-23</span>
+<span class="n">c</span> <span class="o">=</span>  <span class="mi">299792558</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mf">295.15</span>
+<span class="n">M_85</span> <span class="o">=</span> <span class="mf">1.409993e-25</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">two_gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N1</span><span class="p">,</span><span class="n">N2</span><span class="p">,</span><span class="n">mu1</span><span class="p">,</span><span class="n">mu2</span><span class="p">,</span><span class="n">sig1</span><span class="p">,</span><span class="n">sig2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N1</span><span class="p">,</span><span class="n">mu1</span><span class="p">,</span><span class="n">sig1</span><span class="p">)</span><span class="o">+</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N2</span><span class="p">,</span><span class="n">mu2</span><span class="p">,</span><span class="n">sig2</span><span class="p">)</span>
+</code></pre></div>  </div>
+
+</div>
+
+<h4 id="import-data-from-csv-file">Import data from csv file</h4>
+
+<p>Theoretical values from</p>
+
+<p><em>P. Siddons, C. S. Adams, C. Ge, and I. G. Hughes, Jour-
+nal of Physics B: Atomic, Molecular and Optical Physics11
+41, 155004 (2008)</em></p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sff</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s">'parameters/sff.csv'</span><span class="p">)</span>
+<span class="n">freq</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s">'parameters/freq.csv'</span><span class="p">)</span>
+
+
+<span class="n">d_line_87</span> <span class="o">=</span> <span class="mf">384.2304844e6</span>
+<span class="n">d_line_85</span> <span class="o">=</span> <span class="mf">384.2304064e6</span>
+
+
+<span class="n">frequencies_85</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">frequencies_85</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_line_85</span> <span class="o">+</span> <span class="n">freq</span><span class="p">[</span><span class="s">'Rb85-S'</span><span class="p">][</span><span class="mi">2</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">freq</span><span class="p">[</span><span class="s">'Rb85-P'</span><span class="p">][</span><span class="mi">1</span><span class="o">+</span><span class="n">j</span><span class="p">]</span>
+        
+<span class="n">df_freq_85</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">frequencies_85</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s">'1'</span><span class="p">,</span><span class="s">'2'</span><span class="p">,</span><span class="s">'3'</span><span class="p">,</span><span class="s">'4'</span><span class="p">],</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s">'2'</span><span class="p">,</span><span class="s">'3'</span><span class="p">])</span>
+
+
+<span class="n">frequencies_87</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">8</span><span class="p">).</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">frequencies_87</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_line_87</span> <span class="o">+</span> <span class="n">freq</span><span class="p">[</span><span class="s">'Rb87-S'</span><span class="p">][</span><span class="mi">1</span><span class="o">+</span><span class="n">i</span><span class="p">]</span>  <span class="o">+</span> <span class="n">freq</span><span class="p">[</span><span class="s">'Rb87-P'</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+        
+<span class="n">df_freq_87</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">frequencies_87</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s">'0'</span><span class="p">,</span><span class="s">'1'</span><span class="p">,</span><span class="s">'2'</span><span class="p">,</span><span class="s">'3'</span><span class="p">],</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s">'1'</span><span class="p">,</span><span class="s">'2'</span><span class="p">])</span>
+
+</code></pre></div>  </div>
+
+</div>
+
+<h3 id="rb85-expected-spectrum">Rb85 expected spectrum</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sigma_85</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">kb</span><span class="o">*</span><span class="n">T</span><span class="o">/</span><span class="p">(</span><span class="n">M_85</span><span class="o">*</span><span class="p">(</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span><span class="o">*</span><span class="n">df_freq_85</span><span class="p">).</span><span class="n">flatten</span><span class="p">()</span>
+<span class="n">mu_85</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_freq_85</span> <span class="o">-</span> <span class="n">df_freq_85</span><span class="p">[</span><span class="s">'1'</span><span class="p">][</span><span class="mi">0</span><span class="p">]).</span><span class="n">flatten</span><span class="p">()</span>
+<span class="n">N_85</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">sff</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">])[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">5</span><span class="p">].</span><span class="n">flatten</span><span class="p">()</span>
+<span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_freq_85</span><span class="p">).</span><span class="n">flatten</span><span class="p">()</span>
+
+<span class="c1"># x= np.arange(-6000,3000,10)
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="o">*</span><span class="n">scale</span> <span class="o">-</span> <span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">]</span><span class="o">*</span><span class="n">scale</span>
+<span class="n">y_85</span><span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="n">y_gauss_85</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">sigma_85</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">y_85</span> <span class="o">+=</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N_85</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">mu_85</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">sigma_85</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N_85</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">mu_85</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">sigma_85</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">)</span>
+        <span class="n">y_gauss_85</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N_85</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">mu_85</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">sigma_85</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">y_gauss_85</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+        
+<span class="n">par_85</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">two_gauss</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y_85</span><span class="p">,[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">3000</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">217</span><span class="p">,</span><span class="mi">217</span><span class="p">])</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y_85</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">two_gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="o">*</span><span class="n">par_85</span><span class="p">))</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div class="language-plaintext output_data_text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  [&lt;matplotlib.lines.Line2D at 0x7f1f50f5b6a0&gt;]
+</code></pre></div></div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_49_1.png" alt="png" /></p>
+
+<h3 id="rb87-expected-spectrum">Rb87 expected spectrum</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="n">M_87</span> <span class="o">=</span> <span class="mf">1.44316077e-25</span>
+
+<span class="n">sigma_87</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">kb</span><span class="o">*</span><span class="n">T</span><span class="o">/</span><span class="p">(</span><span class="n">M_87</span><span class="o">*</span><span class="p">(</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span><span class="o">*</span><span class="n">df_freq_87</span><span class="p">).</span><span class="n">flatten</span><span class="p">()</span>
+<span class="n">mu_87</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_freq_87</span> <span class="o">-</span> <span class="n">df_freq_85</span><span class="p">[</span><span class="s">'1'</span><span class="p">][</span><span class="mi">0</span><span class="p">]).</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="mi">80</span>
+<span class="n">N_87</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">sff</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">].</span><span class="n">flatten</span><span class="p">()</span>
+
+<span class="n">figsize</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="c1"># x = np.arange(-6000,3000,10)
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="o">*</span><span class="n">scale</span> <span class="o">-</span> <span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">]</span><span class="o">*</span><span class="n">scale</span>
+<span class="n">y_87</span><span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">y_gauss_87</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">sigma_87</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">y_87</span> <span class="o">+=</span> <span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N_87</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">mu_87</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">sigma_87</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N_87</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">mu_87</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">sigma_87</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">)</span>
+        <span class="n">y_gauss_87</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N_87</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">mu_87</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">sigma_87</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">y_gauss_87</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+
+<span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y_87</span><span class="p">)</span>
+
+<span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">6000</span><span class="p">,</span><span class="mi">3000</span><span class="p">,</span><span class="mi">2000</span><span class="p">),</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="n">par_87</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">opt</span><span class="p">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">two_gauss</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y_87</span><span class="p">,[.</span><span class="mi">7</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">4000</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">217</span><span class="p">,</span><span class="mi">217</span><span class="p">])</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">two_gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="o">*</span><span class="n">par_87</span><span class="p">))</span>
+<span class="n">scale_85</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">])</span><span class="o">/</span><span class="n">par_85</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">scale_87</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">])</span><span class="o">/</span><span class="n">par_87</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_51_0.png" alt="png" /></p>
+
+<h3 id="spectrum-for-both-rb-isotopes---theory-compared-to-experiment">Spectrum for both Rb isotopes - Theory compared to experiment</h3>
+
+<h4 id="quantitative-comparison">Quantitative comparison</h4>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#Gaps
+</span><span class="n">gap_87</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">((</span><span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">])</span> <span class="o">-</span> <span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">],</span>
+                                                                          <span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">]))</span><span class="o">*</span><span class="n">scale</span><span class="p">)</span>
+<span class="n">gap_85</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">((</span><span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">])</span> <span class="o">-</span> <span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">],</span>
+                                                                          <span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">]))</span><span class="o">*</span><span class="n">scale</span><span class="p">)</span>
+<span class="n">expected_gap_87</span> <span class="o">=</span> <span class="n">par_87</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">par_87</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">expected_gap_85</span> <span class="o">=</span> <span class="n">par_85</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">par_85</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c1">#Ratio of amplitudes
+</span>
+<span class="n">amp_87</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">((</span><span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_y</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">])</span><span class="o">/</span><span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">],</span>
+                                                                          <span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">])))</span>
+<span class="n">amp_85</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">((</span><span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">],</span><span class="n">spectrum</span><span class="p">.</span><span class="n">sig_y</span><span class="p">[</span><span class="s">'85_F3'</span><span class="p">])</span><span class="o">/</span><span class="n">ufloat</span><span class="p">(</span><span class="n">spectrum</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">],</span>
+                                                                          <span class="n">spectrum</span><span class="p">.</span><span class="n">sig_x</span><span class="p">[</span><span class="s">'85_F2'</span><span class="p">])))</span>
+<span class="n">expected_amp_87</span> <span class="o">=</span> <span class="n">par_87</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">par_87</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">expected_amp_85</span> <span class="o">=</span> <span class="n">par_85</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">par_85</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">results_doppler</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="n">expected_gap_87</span><span class="p">,</span><span class="n">gap_87</span><span class="p">],[</span><span class="n">expected_gap_85</span><span class="p">,</span><span class="n">gap_85</span><span class="p">],[</span><span class="n">expected_amp_87</span><span class="p">,</span><span class="n">amp_87</span><span class="p">],</span>
+                                <span class="p">[</span><span class="n">expected_amp_85</span><span class="p">,</span><span class="n">amp_85</span><span class="p">]])</span>
+<span class="n">results_doppler</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'Theoretical'</span><span class="p">,</span> <span class="s">'Measured'</span><span class="p">]</span>
+<span class="n">results_doppler</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s">'Gap Rb87'</span><span class="p">,</span> <span class="s">'Gap Rb85'</span><span class="p">,</span> <span class="s">'Amp. ratio Rb87'</span><span class="p">,</span> <span class="s">'Amp. ratio Rb85'</span><span class="p">]</span>
+</code></pre></div>  </div>
+
+</div>
+
+<h4 id="plotting-1">Plotting</h4>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">figsize</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'a)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">)</span>
+
+<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">theory_ds</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">()</span>
+<span class="n">theory_ds</span><span class="p">[</span><span class="s">'t'</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">par_87</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">y_g_85</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">y_gauss_85</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">par_87</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">y_g_85</span> <span class="o">*</span> <span class="n">scale_85</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">,</span><span class="n">lw</span> <span class="o">=</span> <span class="p">.</span><span class="mi">8</span><span class="p">,</span><span class="n">label</span> <span class="o">=</span> <span class="s">'Hyperfine trans.'</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">par_87</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">y_g_85</span> <span class="o">*</span> <span class="n">scale_85</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">,</span><span class="n">lw</span> <span class="o">=</span> <span class="p">.</span><span class="mi">8</span><span class="p">,</span><span class="n">label</span> <span class="o">=</span> <span class="s">'_nolegend_'</span><span class="p">)</span>
+    <span class="n">theory_ds</span><span class="p">[</span><span class="s">'hyperfine_{}'</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="n">y_g_85</span> <span class="o">*</span> <span class="n">scale_85</span>
+    
+    
+<span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">y_g_87</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">y_gauss_87</span><span class="p">):</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">par_87</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">y_g_87</span> <span class="o">*</span> <span class="n">scale_87</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">ls</span> <span class="o">=</span> <span class="s">'--'</span><span class="p">,</span><span class="n">lw</span> <span class="o">=</span> <span class="p">.</span><span class="mi">8</span><span class="p">)</span>
+    <span class="n">theory_ds</span><span class="p">[</span><span class="s">'hyperfine_{}'</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">y_gauss_85</span><span class="p">))]</span> <span class="o">=</span> <span class="n">y_g_87</span> <span class="o">*</span> <span class="n">scale_87</span>
+    
+<span class="n">plot</span><span class="p">((</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">])</span><span class="o">*</span><span class="n">scale</span><span class="p">,</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s">'_nolegend_'</span><span class="p">)</span>    
+<span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">par_87</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">y_85</span> <span class="o">*</span> <span class="n">scale_85</span> <span class="o">+</span> <span class="n">y_87</span> <span class="o">*</span> <span class="n">scale_87</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'red'</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s">'Sum'</span><span class="p">)</span>
+
+<span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">2000</span><span class="p">,</span><span class="mi">10000</span><span class="p">,</span><span class="mi">2000</span><span class="p">),</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">xticks</span><span class="p">([])</span>
+<span class="n">yticks</span><span class="p">([])</span>
+<span class="n">legend</span><span class="p">()</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s">'b)'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="p">.</span><span class="n">transAxes</span><span class="p">,</span>
+      <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s">'bold'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">'top'</span><span class="p">)</span>
+
+<span class="n">plot</span><span class="p">((</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F2'</span><span class="p">])</span><span class="o">*</span><span class="n">scale</span><span class="p">,</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">,</span><span class="n">label</span> <span class="o">=</span> <span class="s">'Data'</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">par_87</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">y_85</span> <span class="o">*</span> <span class="n">scale_85</span> <span class="o">+</span> <span class="n">y_87</span> <span class="o">*</span> <span class="n">scale_87</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'red'</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s">'Model'</span><span class="p">)</span>
+
+<span class="n">ylabel</span><span class="p">(</span><span class="s">'Absorption [V]'</span><span class="p">)</span>
+<span class="n">xlabel</span><span class="p">(</span><span class="s">'Frequency [GHz]'</span><span class="p">)</span>
+<span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">2000</span><span class="p">,</span><span class="mi">10000</span><span class="p">,</span><span class="mi">2000</span><span class="p">),</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">legend</span><span class="p">()</span>
+<span class="c1"># savefig("./clean/" + folder + "/theory_doppler.pdf",bbox_inches='tight')
+</span><span class="n">results_doppler</span>
+</code></pre></div>  </div>
+
+</div>
+
+<div>
+  <div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Theoretical</th>
+      <th>Measured</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Gap Rb87</th>
+      <td>6511.541455</td>
+      <td>6324.8+/-1.6</td>
+    </tr>
+    <tr>
+      <th>Gap Rb85</th>
+      <td>2909.527534</td>
+      <td>2836.4+/-0.6</td>
+    </tr>
+    <tr>
+      <th>Amp. ratio Rb87</th>
+      <td>1.527590</td>
+      <td>1.846+/-0.006</td>
+    </tr>
+    <tr>
+      <th>Amp. ratio Rb85</th>
+      <td>1.361749</td>
+      <td>1.4439+/-0.0018</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+  </div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_56_1.png" alt="png" /></p>
+
+<p>a) Dashed grey lines: Hyperfine peaks that make up the doppler broadened peaks (red solid line) - Theoretical values</p>
+
+<p>b) Comparison of the theoretical values (model) to the measured ones (data).</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">photo_nb</span><span class="p">.</span><span class="n">t</span><span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">])</span><span class="o">*</span><span class="n">scale</span><span class="o">/</span><span class="mi">1000</span>
+<span class="n">fp</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">fp</span><span class="p">.</span><span class="n">t</span><span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">])</span><span class="o">*</span><span class="n">scale</span><span class="o">/</span><span class="mi">1000</span>
+<span class="n">theory_ds</span><span class="p">.</span><span class="n">t</span> <span class="o">/=</span> <span class="mi">1000</span>
+<span class="n">photo_nb</span><span class="p">[</span><span class="s">'photo_nb'</span><span class="p">]</span> <span class="o">=</span> <span class="n">photo_nb</span><span class="p">.</span><span class="n">V</span>
+<span class="n">photo_nb</span> <span class="o">=</span> <span class="n">photo_nb</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="s">'V'</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">master_df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">merge_asof</span><span class="p">(</span><span class="n">photo_nb</span><span class="p">,</span> <span class="n">theory_ds</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">])</span>
+<span class="n">bokeh_doppler</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">bokeh_doppler</span><span class="p">.</span><span class="n">t</span> <span class="o">-</span><span class="n">spectrum</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'87_F1'</span><span class="p">])</span><span class="o">*</span><span class="n">scale</span><span class="o">/</span><span class="mi">1000</span>
+<span class="n">bokeh_doppler</span><span class="p">[</span><span class="s">'photo_raw'</span><span class="p">]</span> <span class="o">=</span> <span class="n">bokeh_doppler</span><span class="p">.</span><span class="n">V</span>
+<span class="n">bokeh_doppler</span> <span class="o">=</span> <span class="n">bokeh_doppler</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="s">'V'</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">master_df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">merge_asof</span><span class="p">(</span><span class="n">master_df</span><span class="p">,</span> <span class="n">bokeh_doppler</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">]</span> <span class="p">)</span>
+
+<span class="n">bokeh_data</span><span class="p">[</span><span class="s">'Broadened'</span><span class="p">]</span> <span class="o">=</span> <span class="n">master_df</span>
+<span class="n">bokeh_data</span><span class="p">[</span><span class="s">'FP'</span><span class="p">]</span> <span class="o">=</span> <span class="n">fp</span>
+
+</code></pre></div>  </div>
+
+</div>
+
+<h3 id="saturated">Saturated</h3>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plot</span><span class="p">((</span><span class="n">sat_filtered_trunc</span><span class="p">.</span><span class="n">t</span><span class="o">-</span> <span class="n">spectrum_sat</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="s">'F=2'</span><span class="p">].</span><span class="n">n</span><span class="o">/</span><span class="n">scale_sat</span><span class="p">.</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="n">scale_sat</span><span class="p">.</span><span class="n">n</span><span class="p">,</span><span class="n">sat_filtered_trunc</span><span class="p">.</span><span class="n">V</span><span class="p">,</span>
+     <span class="n">label</span> <span class="o">=</span> <span class="s">'Data'</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="s">'grey'</span><span class="p">)</span>
+
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s">'F=1 (theory)'</span><span class="p">,</span><span class="s">'F=2 (theory)'</span><span class="p">,</span> <span class="s">'F=3 (theory)'</span><span class="p">,</span><span class="s">''</span><span class="p">]</span>
+<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s">'red'</span><span class="p">,</span><span class="s">'green'</span><span class="p">,</span><span class="s">'blue'</span><span class="p">]</span>
+
+<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">line_x</span> <span class="ow">in</span> <span class="p">(</span><span class="n">freq</span><span class="p">[</span><span class="s">'Rb87-P'</span><span class="p">]</span><span class="o">-</span><span class="n">freq</span><span class="p">[</span><span class="s">'Rb87-P'</span><span class="p">][</span><span class="mi">2</span><span class="p">])[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]:</span>
+    <span class="n">axvline</span><span class="p">(</span><span class="n">line_x</span><span class="p">,</span><span class="n">lw</span> <span class="o">=</span> <span class="p">.</span><span class="mi">9</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">i</span><span class="o">+=</span> <span class="mi">1</span>
+<span class="n">yticks</span><span class="p">([])</span><span class="c1">#Quantitative comparison
+</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"Absorption"</span><span class="p">)</span>
+<span class="n">xlabel</span><span class="p">(</span><span class="s">'Frequency [MHz]'</span><span class="p">)</span>
+<span class="n">legend</span><span class="p">()</span>
+<span class="c1"># savefig("./clean/" + folder + "/theory_sat.pdf",bbox_inches='tight')
+</span><span class="bp">None</span>
+</code></pre></div>  </div>
+
+</div>
+
+<p><img src="/assets/full_spectrum_files/full_spectrum_60_0.png" alt="png" /></p>
+
+<p>Figure: Measured absorption spectrum for saturated spectroscopy compared to model predictions. The colored vertical lines give the peak positions predicted by our theoretical model. 
+The y-axis is the absorption strength in arbitrary units.</p>
+
+<div class="input_area">
+
+  <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">,</span><span class="s">'sat_background'</span><span class="p">,</span><span class="s">'sat_raw'</span><span class="p">]</span>
+<span class="n">sat_nb</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">,</span><span class="s">'sat_nb'</span><span class="p">]</span>
+<span class="n">sat_filtered</span><span class="p">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">,</span> <span class="s">'sat_filtered'</span><span class="p">]</span>
+
+<span class="n">bokeh_data</span><span class="p">[</span><span class="s">'Saturated'</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">merge_asof</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span><span class="n">sat_nb</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span><span class="p">[</span><span class="s">'t'</span><span class="p">])</span>
+<span class="n">bokeh_data</span><span class="p">[</span><span class="s">'Saturated'</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">merge_asof</span><span class="p">(</span><span class="n">bokeh_data</span><span class="p">[</span><span class="s">'Saturated'</span><span class="p">],</span><span class="n">sat_filtered</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="p">[</span><span class="s">'t'</span><span class="p">])</span>
+<span class="n">bokeh_data</span><span class="p">[</span><span class="s">'Saturated'</span><span class="p">].</span><span class="n">t</span> <span class="o">-=</span> <span class="n">par_background</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">bokeh_data</span><span class="p">[</span><span class="s">'Saturated'</span><span class="p">].</span><span class="n">t</span> <span class="o">*=</span> <span class="n">scale_sat</span><span class="p">.</span><span class="n">n</span>
+</code></pre></div>  </div>
+
+</div>
+
+:ET
