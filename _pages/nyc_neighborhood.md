@@ -31,7 +31,7 @@ The metrics and associated data used in this report are the following
 
 1. **Safety**
     
-    To calculate the average safety of a given neighborhood I will combine data on the number of arrests made and the number of shootings. Both datasets are availabe at [NYC Open Data](https://opendata.cityofnewyork.us/).
+    To calculate the average safety of a given neighborhood I will combine data on the number of arrests made and the number of shootings. Both datasets are availabe at [NYC Open Data](https://opendata.cityofnewyork.us/). Ideally the crime rate would be normalized by the population of a neighborhoood. Unfortunately, census data was not readily availabe on a NYC neighborhood level, and data that was available was both outdated and rather coarse-grained. I have therefore chosen to normalize crime rate by the area of a given neighborhood. While not ideal, the area can serve as a proxy for population counts.
     
 1. **Rent**
 
@@ -49,7 +49,7 @@ The metrics and associated data used in this report are the following
 
     Given the shorter commute time, it might be desirable for some people to live as close as possible to their workplace. Both, the Financial District, Midtown Manhattan are the centers of economic activity in New York. I have chosen the latter to calculate this distance metric. 
     
-Datasets only cover the year of 2019. Due to the lack of data regarding Staten Island, I disregarded the bourough in the final analysis.
+Datasets only cover the year of 2019. Due to the lack of data regarding Staten Island, I disregarded the borough in the final analysis.
     
 ## Methods
 
@@ -72,15 +72,17 @@ Along with the location where the incident occured, the arrests data contained i
 
 ![](/assets/img/nyc_fig/arrests_freq.png)
 
-I assigned incidents, both in the case of arrests and shootings, to neighborhoods by a nearest neighbor algorithm. This means that for every incident, I determined which neighborhood center (contained in the [NYC geodata](https://data.beta.nyc/dataset/pediacities-nyc-neighborhoods)) was closest to the incident using euclidean distance. 
+Using a geometric algorithm (ray-casting) I determined which neighborhoods the incidents, both in the case of arrests and shootings, occured in.  
 To get an accurate treatment of distances, the coordinates provided as longitude and latitude first had to be multiplied by appropriate prefactors as so:
 
 $$ d(A,B) = \sqrt{0.52^2(A_{long} - B_{long})^2 + 0.69^2 (A_{lat} - B_{lat})^2 } $$
 
 This linear approximation to distances on a sphere works well for the small angles we are interested in.
 
-I expressed incident counts for each neighborhood as multiples of the average amount of incidents in all of NYC. I then combined together data on arrests and shootings. As the normalization occured before the datasets were combined, more weight was automatically given to shootings. 
+I expressed incident counts for each neighborhood as multiples of the average amount of incidents in all of NYC and normalized them by the neighborhood area. I then combined together data on arrests and shootings. As the normalization occured before the datasets were combined, more weight was automatically given to shootings. 
 
+
+{% include render_crime.html %} 
 
 ### Rent     
 
@@ -157,14 +159,14 @@ Using all five metrics metioned in the "Data" section, one can measure the relat
 
 ![](/assets/img/nyc_fig/percentage_pareto.png)
 
-The clear winners are Manhattan and the Bronx, followed by Brooklyn and Queens in last place. 
+The clear winners are Brooklyn and the Bronx, followed by Manhattan and Queens in last place. 
 
 What is every Boroughs strongest asset? Looking only at Pareto optimal neighborhoods, one can calculate average value for every metric. For visualization purposes, I have normalized every metric to lie between zero and one, with zero being "worst" and one meaning "best". 
 
-{% include pareto_radial_test.html %}
+{% include pareto_radial.html %}
 
-Not surprisingly, Manhattan is a clear winner when it comes to venue density and distance to Midtown (which, of course, is in Manhattan). With its many residential neighborhoods in the East, Queens can be considered the safest borough (not everywhere!).
-Anyone who lives in the Bronx can attest to its unbeatable rent prices. It is also, in spite of its reputation, surprisingly safe, tying with Brooklyn and being safer on average than Manhattan. 
+Not surprisingly, Manhattan is a clear winner when it comes to venue density and distance to Midtown (which, of course, is in Manhattan). With its many residential neighborhoods in the East, Queens can be considered the safest borough (not everywhere!) followed by Brooklyn.
+Anyone who lives in the Bronx can attest to its unbeatable rent prices. In terms of safety, the Bronx ties with Manhattan. 
 
 ## Discussion
 

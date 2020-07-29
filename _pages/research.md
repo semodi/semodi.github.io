@@ -36,6 +36,22 @@ research:
 
 
 projects:
+  - url: /nyc-neighborhoods/
+    image_path: /assets/img/nyc_fig/subway_grid.png
+    alt: "nyc-neighborhoods"
+    title: "So you want to move to ...?"
+    excerpt: "Finding (Pareto) optimal neighborhoods in NYC"
+    btn_label: "Read more"
+    btn_class: "btn--primary"
+
+  - url: /polittwitter/
+    image_path: /assets/img/lobbyists4america/wordcloud.png
+    alt: "political_twitter"
+    title: "Political Twitter"
+    excerpt: "Analysis of the US political twitter landscape"
+    btn_label: "Read more"
+    btn_class: "btn--primary"
+
   - url: /satspec/
     image_path: /assets/img/sat_spec_all.png
     alt: "satspec"

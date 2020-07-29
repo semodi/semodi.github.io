@@ -1,11 +1,11 @@
 ---
 layout: splash
-title:  "Lobbyists4America"
-permalink: /lobbyists4america/
+title:  "PoliticalTwitter"
+permalink: /polittwitter/
 date:   2019-06-21
 --- 
 
-# Lobbyists4America - Report
+# Political Twitter - Report
 
 ## Project description
 
