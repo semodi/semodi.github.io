@@ -79,7 +79,7 @@ $$ d(A,B) = \sqrt{0.52^2(A_{long} - B_{long})^2 + 0.69^2 (A_{lat} - B_{lat})^2 }
 
 This linear approximation to distances on a sphere works well for the small angles we are interested in.
 
-I expressed incident counts for each neighborhood as multiples of the average amount of incidents in all of NYC and normalized them by the neighborhood area. I then combined together data on arrests and shootings. As the normalization occured before the datasets were combined, more weight was automatically given to shootings. 
+I expressed incident counts for each neighborhood as multiples of the average amount of incidents in all of NYC and normalized them by the neighborhood area. I then combined together data on arrests and shootings. As the normalization occured before the datasets were combined, more weight was automatically given to shootings. The final metric for safety is expressed as a multiple of the crime rate across all of NYC. The following map shows this metric on a log-2 scale: 
 
 
 {% include render_crime.html %} 
@@ -106,7 +106,7 @@ The data was fitted using Ridge Regression with Polynomial Features up to order 
 
 The $R^2$ metric indicates that this model performes better than the one using nearest neighbors. However, sales data is not available for every neighborhood, so the final model will need to be able to take into account other kinds of input as well.
 
-For some neighborhoods where rent prices for 2019 are missing, historic prices are still available. For these neighborhoods one can simply model the average increase in rent over the years to get an estimate of current rent prices. 
+For some neighborhoods where rent prices for 2019 are missing, historic prices are still available. For these neighborhoods one can simply model the average increase in rent over the years to get an estimate of current rent prices. Note that rent prices were shifted to zero mean.
 
 ![](/assets/img/nyc_fig/rent_from_past.png)
 
@@ -151,7 +151,7 @@ As a proxy for "Distance from Midtown", I calculated the distance between every 
 ## Results
 
 
-For visualization purposes, one calculate the Pareto frontier for a subset of the metrics introduced above. The following graphic shows neighborhoods that are  Pareto optimal with respect to rent, crime rate and average rent.
+For visualization purposes, I will start by only considering the Pareto frontier for a subset of the metrics introduced above. The following graphic shows neighborhoods that are  Pareto optimal with respect to rent, crime rate and average rent.
 
 {% include pareto_3d.html %}
 
@@ -161,7 +161,7 @@ Using all five metrics metioned in the "Data" section, one can measure the relat
 
 The clear winners are Brooklyn and the Bronx, followed by Manhattan and Queens in last place. 
 
-What is every Boroughs strongest asset? Looking only at Pareto optimal neighborhoods, one can calculate average value for every metric. For visualization purposes, I have normalized every metric to lie between zero and one, with zero being "worst" and one meaning "best". 
+What is every boroughs strongest asset? Looking only at Pareto optimal neighborhoods, one can calculate average value for every metric. For visualization purposes, I have normalized every metric to lie between zero and one, with zero being "worst" and one meaning "best". 
 
 {% include pareto_radial.html %}
 
@@ -187,7 +187,7 @@ I have created a small web-app that, given a NYC neighborhood it will determine 
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 </head>
 <body>
-    <iframe src="https://nyc-neighborhoods.herokuapp.com" width="1150" height="770"></iframe>
+    <iframe src="https://nyc-neighborhoods.herokuapp.com" width="1150" height="1000"></iframe>
 </body>
 </html>
 

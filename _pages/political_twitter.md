@@ -9,14 +9,17 @@ date:   2019-06-21
 
 ## Project description
 
-The idea of my project is to develop a general understanding of the political landscape in the US
-between the years 2008-2017. I will identify both relationships between politicians and attitudes of
-politicians towards key topics. Apart from helping voters get a better idea of their politicians’
-convicitions, it will support lobbyists in determining how to best allocate resources. Trying to get a
+*This project served as a capstone for the "Learn SQL for Data Science Specialization" on Coursera. 
+The original task was to create a report for a fictional company named "Lobbyists4America" based on 
+tweets from politicians between the years 2008 and 2017.*
+
+As no more details regarding the task were given, I decided that the goal of my project
+will be to develop a general understanding of the political landscape in the US. I will identify both relationships between politicians and attitudes of
+politicians towards key topics. 
+Apart from helping voters get a better idea of their politicians'
+convicitions, it will support (fictional) lobbyists in determining how to best allocate resources. Trying to get a
 piece of legislation to pass, the lobbyist can e.g. use this analysis to identify which politicians need to
 be swayed and which politicians have the largest influence on their colleagues.
-
-This report is geared towards stakeholders.
 
 
 ### Questions
@@ -29,19 +32,7 @@ What are the relationships between politicians; are they amicable/hostile? What 
 these relationships? Are they mostly divided by party line? Which politicians have
 the largest network, the biggest reach?
 3. Topic modeling and sentiment analysis:
-How do certain politicians feel about given topics? Are sentiments split along party line? Given
-a topic, which politicians are the most opposed/in favor of it?
-
-### Hypotheses
-1. Exploratory data analysis shows that Donald Trump has the most followers, so I expect him to have
-the most likes and reweets as well. I do expect the number of tweets to correlate with the number of
-likes and retweets, however I expect the number of followers to be more decisive.
-2. I expect relationships between politicians offer the same party to be amicable and more hostile
-otherwards. I expect senators to
-have the largest networks, mainly because they have usually been in office longer and because their
-issues concern a larger amount of people.
-3. I expect sentiments toward topics to be mostly split among party lines for big issues such as
-health care and and immigration. 
+Which topics dominate political twitter? How do members of every party feel/tweet about these topics?
 
 ### Approach
 
@@ -61,9 +52,9 @@ A). As a metric we can then look at the total number of connections a politician
 
 ![](/assets/img/lobbyists4america/nooffollowers.png)
 
-Donald trump has the largest number of followers; in fact he has more followers than all Democrats and Republicans combined.
+Donald Trump has the largest number of followers; in fact he has more followers than all Democrats and Republicans combined.
 
-![](/assets/img/lobbyists4america/nooffollowers_byparty.png)
+![](/assets/img/lobbyists4america/nooffollowers_byparty_potus.png)
 
 
 Cory Booker leads in number of tweets.
@@ -74,7 +65,7 @@ However, in number of likes (aka favorites) per tweet he does not make it to the
 
 ![](/assets/img/lobbyists4america/favorite_count.png)
 
-Looking at correlations within our data we see that the number of followers if correlated with the number of likes per tweet ($R^2 = 0.57$), however no correlation between number of followers and number of retweets per tweet can be observed ($R^2=0.01$). Using this knowledge we can fit a linear regression model:
+Looking at correlations within our data we see that the number of followers is correlated with the number of likes per tweet ($R^2 = 0.57$), however no correlation between number of followers and number of retweets per tweet can be observed ($R^2=0.01$). Using this knowledge we can fit a linear regression model:
 
 $$ \left( \frac{\text{Likes}}{\text{Tweet}} \right) = a \cdot \left( \text{Followers} \right) + b $$
 
@@ -86,11 +77,11 @@ On a party level it seems like Democrats perform better on average than Republic
 
 ![](/assets/img/lobbyists4america/likes_compared_by_party.png)
 
-Indeed a two-sample hypotheses test using non-parametric bootstrap reveals that democrats have on average 10 more likes per tweet as expected by their number of followers ($p < 10^{-5}$, 95% confidence interval: (6,13))
+Indeed a two-sample hypotheses test using non-parametric bootstrap reveals that Democrats have on average 10 more likes per tweet as expected by their number of followers ($p < 10^{-5}$, 95% confidence interval: (6,13))
 
 ## Network analysis
-I treated mentions, replies and quotes as (undirected) "Connections".
-As predicted, Senators have on average 4.8 more connections than House Representatives and Governors ($p=7\cdot10^{-4}$, 95% CI: (2.5, 6.9)).
+I treated mentions, replies and quotes as (undirected) connections.
+Senators have on average 4.8 more connections than House Representatives and Governors ($p=7\cdot10^{-4}$, 95% CI: (2.5, 6.9)).
 
 ![](/assets/img/lobbyists4america/network_by_office.png)
 
@@ -123,7 +114,7 @@ I picked "Obamacare/ACA" and "Immigration" for further analysis. It should be no
 
 # Conclusion 
 
-I have identified which politicians have the largest platform, both among their colleagues and their followers. Moving forward, I would recommend Lobbyists4America focus on politicians who are both popular among their followers (many followers + more likes per tweet than expected) and have a strong network of fellow politicians. An investment into these key-players should pay off as their opinion towards a policy/topic will quickly propagate. Given the vast number of politicians included in this dataset I have often resorted to presenting only the top and bottom precentiles. In the future it might be helpful to have an interactive dashboard that stakeholders can use to browse/analyze the dataset themselves.
+I have identified which politicians have the largest platform, both among their colleagues and their followers. Moving forward, I would recommend Lobbyists4America (the fictional company this report was geared towards) focus on politicians who are both popular among their followers (many followers + more likes per tweet than expected) and have a strong network of fellow politicians. An investment into these key-players should pay off as their opinion towards a policy/topic will quickly propagate. Given the vast number of politicians included in this dataset I have often resorted to presenting only the top and bottom precentiles. In the future it might be helpful to have an interactive dashboard that stakeholders can use to browse/analyze the dataset themselves.
 
 
 ---
