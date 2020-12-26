@@ -9,7 +9,7 @@ research:
     image_path: /assets/img/neuralxc.png
     alt: "nxc"
     title: "NeuralXC"
-    excerpt: "Python package to train and deploy machine learned density functionals"
+    excerpt: "Python package to train and utilize machine learned density functionals"
     btn_label: "Repository"
     btn_class: "btn--primary"
   - url: "https://github.com/semodi/mlcf" 
@@ -61,13 +61,24 @@ projects:
     btn_label: "Read more"
     btn_class: "btn--primary"
 
-  - url: /btw/
-    image_path: /assets/img/germany_map.png
-    alt: "btw"
-    title: "The rise of right-wing popularism in Germany"
-    excerpt: "Visualization of demographic data related to the German general election in 2017."
-    btn_label: "Read more"
-    btn_class: "btn--primary"
+
+medium:
+  - url: https://towardsdatascience.com/how-bayes-theorem-helped-win-the-second-world-war-7f3be5f4676c
+    image_path: https://miro.medium.com/max/2112/1*K7FLInKduVvTPfivVdp5oA.jpeg
+    title: "How Bayes theorem helped win the second world war"
+    excerpt: "Part I: Introduction to Bayesian statistics and how it cracked the Japaneses naval cipher JN 25"
+  - url: https://towardsdatascience.com/supercharge-your-model-performance-with-inductive-bias-48559dba5133
+    image_path: https://miro.medium.com/max/2160/1*7JWph87_ge9JeopLyG_y2g.png
+    title: "Supercharge your model performance with inductive bias"
+    excerpt: "How to work smarter, not harder: Encoding real-life symmetries in machine learning models can improve their accuracy by orders of magnitude!"
+  - url: https://towardsdatascience.com/abstract-base-classes-and-how-to-use-them-in-your-data-science-project-2503c13704f4
+    image_path: https://miro.medium.com/max/1000/1*AIbJiSTxZ6gdfwJLhwr2RQ.jpeg
+    title: "Abstract base classes and how to use them in your data science project"
+    excerpt: "Write cleaner and safer python code by using this object-oriented programming building block"
+  - url: https://towardsdatascience.com/unwrapping-the-swiss-roll-9249301bd6b7 
+    image_path: https://miro.medium.com/max/700/1*ZkvcETEVFVV5LU1IFsLqoA.jpeg
+    title: Unwrapping the Swiss Roll with Diffusion Maps
+    excerpt: "The amazing dimensionality reduction algorithm you may have never heard of"
 
 ---
 
@@ -78,6 +89,11 @@ projects:
 ## Other Projects
 
 {% include feature_row id="projects" caption="Research projects." %}
+
+## Medium articles
+
+{% include feature_row id="medium" caption="Medium articles." %}
+
 
 ---
 

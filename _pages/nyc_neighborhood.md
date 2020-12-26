@@ -176,7 +176,7 @@ Of course, many factors contribute to an individual's decision where to live and
 
 Nevertheless, my analysis will hopefully help apartment seekers find their ideal neighborhood. Maybe I can even convince people already living in NYC to upgrade their living situation by moving from a non-PE to a PE neighborhood. 
 
-I have created a small web-app that, given a NYC neighborhood it will determine whether it is PE and if not recommend PE alternatives. Give it a try:
+I have created a small web-app that, given a NYC neighborhood it will determine whether it is PE and if not recommend PE alternatives. Give it a try: (the app might take a moment to spin up as it is currently hosted on a free Heroku instance) 
 
 
 
