@@ -2,6 +2,8 @@
 main:
   - title: "CV"
     url: /assets/pdf/cv.pdf
+  - title: "Portfolio"
+    url: /portfolio/
   - title: "Publications"
     url: /publications/
   - title: "Projects"
