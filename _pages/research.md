@@ -5,14 +5,14 @@ permalink: /projects/
 date:   2018-10-24
 categories: pages
 research:
-  - url: "https://github.com/semodi/neuralxc" 
+  - url: "https://github.com/semodi/neuralxc"
     image_path: /assets/img/neuralxc.png
     alt: "nxc"
     title: "NeuralXC"
     excerpt: "Python package to train and utilize machine learned density functionals"
     btn_label: "Repository"
     btn_class: "btn--primary"
-  - url: "https://github.com/semodi/mlcf" 
+  - url: "https://github.com/semodi/mlcf"
     image_path: /assets/img/model_bluegradient_nolabel.png
     alt: "mlcf"
     title: "Machine learned correcting functionals"
@@ -36,6 +36,15 @@ research:
 
 
 projects:
+
+  - url: /paper-scraper/
+    image_path: /assets/img/paperscraper.png
+    alt: "paper-scraper"
+    title: "paper-scraper"
+    exerpt: "Web-app that lets users explore recent arXiv publications based on their research interests."
+    btn_label: "Read more"
+    btn_class: "btn--primary"
+
   - url: /nyc-neighborhoods/
     image_path: /assets/img/nyc_fig/subway_grid.png
     alt: "nyc-neighborhoods"
@@ -56,7 +65,7 @@ projects:
     image_path: /assets/img/sat_spec_all.png
     alt: "satspec"
     title: "Saturation Spectroscopy"
-    excerpt: "Data analysis workflow of a saturation spectroscopy study on Rubidium. The experiment was conducted as part of the 
+    excerpt: "Data analysis workflow of a saturation spectroscopy study on Rubidium. The experiment was conducted as part of the
 	Graduate Laboratory course at Stony Brook University"
     btn_label: "Read more"
     btn_class: "btn--primary"
@@ -75,7 +84,7 @@ medium:
     image_path: https://miro.medium.com/max/1000/1*AIbJiSTxZ6gdfwJLhwr2RQ.jpeg
     title: "Abstract base classes and how to use them in your data science project"
     excerpt: "Write cleaner and safer python code by using this object-oriented programming building block"
-  - url: https://towardsdatascience.com/unwrapping-the-swiss-roll-9249301bd6b7 
+  - url: https://towardsdatascience.com/unwrapping-the-swiss-roll-9249301bd6b7
     image_path: https://miro.medium.com/max/700/1*ZkvcETEVFVV5LU1IFsLqoA.jpeg
     title: Unwrapping the Swiss Roll with Diffusion Maps
     excerpt: "The amazing dimensionality reduction algorithm you may have never heard of"
@@ -96,4 +105,3 @@ medium:
 
 
 ---
-
