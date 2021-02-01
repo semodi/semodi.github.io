@@ -3,19 +3,19 @@ layout: splash
 title:  "PoliticalTwitter"
 permalink: /polittwitter/
 date:   2019-06-21
---- 
+---
 
 # Political Twitter - Report
 
 ## Project description
 
-*This project served as a capstone for the "Learn SQL for Data Science Specialization" on Coursera. 
-The original task was to create a report for a fictional company named "Lobbyists4America" based on 
+*This project served as a capstone for the "Learn SQL for Data Science Specialization" on Coursera.
+The original task was to create a report for a fictional company named "Lobbyists4America" based on
 tweets from politicians between the years 2008 and 2017.*
 
 As no more details regarding the task were given, I decided that the goal of my project
 will be to develop a general understanding of the political landscape in the US. I will identify both relationships between politicians and attitudes of
-politicians towards key topics. 
+politicians towards key topics.
 Apart from helping voters get a better idea of their politicians'
 convicitions, it will support (fictional) lobbyists in determining how to best allocate resources. Trying to get a
 piece of legislation to pass, the lobbyist can e.g. use this analysis to identify which politicians need to
@@ -45,10 +45,21 @@ For simplicity I will assume that these relationships are undirected (meaning th
 A). As a metric we can then look at the total number of connections a politician has and further see how many of these connections are negative/positive.
 3. Topics can both be extracted from the text body of a tweet and hashtags used in the tweet. I will assume that hashtags can be uniquely identified with a topic. Sentiment analysis can then be used to gauge a politicians opinian towards a topic.
 
+### Challenges
+
+The main challenge during this analysis was the lack of data regarding party membership as well as office being held
+by the inviduals behind the twitter accounts. This problem was resolved in a four tier approach:
+
+1. The user's account  name as well as account description was parsed for keywords such as "Democratic", "GOP", "Senator" etc. This revealed the
+desired information for about 50% of all accounts.
+2. Data from the Federal Election Commission (fec.gov) was matched by first and last name to twitter accounts to assign party membership where step 1 failed.
+3. A python script was created to scrape Wikipedia for information about accounts for which the previous approaches returned no results.
+4. The remaining approx. 20 accounts were manually scanned and information was retrieved through google searches.
+
 
 ## Results
 
-### Tweet statistics 
+### Tweet statistics
 
 ![](/assets/img/lobbyists4america/nooffollowers.png)
 
@@ -61,7 +72,7 @@ Cory Booker leads in number of tweets.
 
 ![](/assets/img/lobbyists4america/nooftweets.png)
 
-However, in number of likes (aka favorites) per tweet he does not make it to the top 15 
+However, in number of likes (aka favorites) per tweet he does not make it to the top 15
 
 ![](/assets/img/lobbyists4america/favorite_count.png)
 
@@ -89,14 +100,14 @@ Analyzing the sentiment of these connections (-1: most negative sentiment, +1 mo
 
 ![](/assets/img/lobbyists4america/party_sentiment.png)
 
-From the network graph shown below we can infer several things. 
+From the network graph shown below we can infer several things.
 Senators (shown with bold borders) seem to cluster, which means that they form stronger networks with other Senators. Using the graph interactively we can identify which politicians communicate more across party lines. These are the ones closer to the boundary between Republicans and Democrats. We can further see that both Bernie Sanders and maybe more surprisingly Donald Trump is surrounded by mostly Democrats.
 
 {% include network.html %}
 
 ## Topic modeling
 
-For simplicity we only use hashtags to attach a topic to given tweet. 
+For simplicity we only use hashtags to attach a topic to given tweet.
 Interestingly, only 1% of distinct hashtags make up about 50% of all usages of hashtags in this corpus:
 
 ![](/assets/img/lobbyists4america/tweetcomp.png)
@@ -112,7 +123,7 @@ I picked "Obamacare/ACA" and "Immigration" for further analysis. It should be no
 ![](/assets/img/lobbyists4america/immigration.png)
 
 
-# Conclusion 
+# Conclusion
 
 I have identified which politicians have the largest platform, both among their colleagues and their followers. Moving forward, I would recommend Lobbyists4America (the fictional company this report was geared towards) focus on politicians who are both popular among their followers (many followers + more likes per tweet than expected) and have a strong network of fellow politicians. An investment into these key-players should pay off as their opinion towards a policy/topic will quickly propagate. Given the vast number of politicians included in this dataset I have often resorted to presenting only the top and bottom precentiles. In the future it might be helpful to have an interactive dashboard that stakeholders can use to browse/analyze the dataset themselves.
 
