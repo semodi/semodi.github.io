@@ -41,7 +41,15 @@ projects:
     image_path: /assets/img/paperscraper.png
     alt: "paper-scraper"
     title: "paper-scraper"
-    exerpt: "Web-app that lets users explore recent arXiv publications based on their research interests."
+    excerpt: "Web-app that lets users explore recent arXiv publications based on their research interests."
+    btn_label: "Read more"
+    btn_class: "btn--primary"
+
+  - url: /tst/
+    image_path: /assets/img/tst/title.png
+    alt: "twitter-sentiment-tracker"
+    title: "Twitter Sentiment Tracker"
+    excerpt: "Track twitter users' sentiments towards topics and gain insights into market and cultural trends"
     btn_label: "Read more"
     btn_class: "btn--primary"
 
